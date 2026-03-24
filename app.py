@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="Simulador 3D Tuberías", layout="wide")
 
-st.title("🔧 Simulador 3D: Sistema con División y Unión de Flujo")
+st.title("🔧 Simulador 3D: Sistema de Tuberías en Paralelo (Entrada → División → Unión)")
 
 # ----------------------
 # CONTROLES
@@ -32,69 +32,105 @@ Q3 = Q_total*(1/K3)/(1/K1+1/K2+1/K3)
 v1, v2, v3 = Q1/A, Q2/A, Q3/A
 
 # ----------------------
+# GEOMETRÍA CORRECTA
+# ----------------------
+
+# Entrada (línea recta)
+x_in = np.linspace(0, 3, 50)
+y_in = np.zeros_like(x_in)
+z_in = np.zeros_like(x_in)
+
+# División (nodo)
+x_split = 3
+
+# Ramas paralelas
+x_branch = np.linspace(3, 8, 50)
+y1 = np.ones_like(x_branch) * 2
+y2 = np.zeros_like(x_branch)
+y3 = np.ones_like(x_branch) * -2
+z = np.zeros_like(x_branch)
+
+# Unión (nodo)
+x_merge = 8
+
+# Salida
+x_out = np.linspace(8, 11, 50)
+y_out = np.zeros_like(x_out)
+z_out = np.zeros_like(x_out)
+
+# ----------------------
+# FIGURA BASE (TUBERÍAS)
+# ----------------------
+fig = go.Figure()
+
+# Entrada
+fig.add_trace(go.Scatter3d(x=x_in, y=y_in, z=z_in, mode='lines', line=dict(width=10), name='Entrada'))
+
+# Nodo división
+fig.add_trace(go.Scatter3d(x=[x_split], y=[0], z=[0], mode='markers', marker=dict(size=6), name='Nodo división'))
+
+# Ramas
+fig.add_trace(go.Scatter3d(x=x_branch, y=y1, z=z, mode='lines', line=dict(width=10), name='Rama 1'))
+fig.add_trace(go.Scatter3d(x=x_branch, y=y2, z=z, mode='lines', line=dict(width=10), name='Rama 2'))
+fig.add_trace(go.Scatter3d(x=x_branch, y=y3, z=z, mode='lines', line=dict(width=10), name='Rama 3'))
+
+# Nodo unión
+fig.add_trace(go.Scatter3d(x=[x_merge], y=[0], z=[0], mode='markers', marker=dict(size=6), name='Nodo unión'))
+
+# Salida
+fig.add_trace(go.Scatter3d(x=x_out, y=y_out, z=z_out, mode='lines', line=dict(width=10), name='Salida'))
+
+# ----------------------
+# FLUJO DINÁMICO (PARTÍCULAS)
+# ----------------------
+
+t = np.linspace(0, 1, 30)
+
+# Entrada flujo
+fig.add_trace(go.Scatter3d(
+    x=0 + t*3,
+    y=np.zeros_like(t),
+    z=np.zeros_like(t),
+    mode='markers',
+    marker=dict(size=4),
+    name='Flujo entrada'
+))
+
+# Ramas flujo
+fig.add_trace(go.Scatter3d(x=3 + t*5, y=2*np.ones_like(t), z=0*t, mode='markers', marker=dict(size=4), name='Flujo rama 1'))
+fig.add_trace(go.Scatter3d(x=3 + t*5, y=0*np.ones_like(t), z=0*t, mode='markers', marker=dict(size=4), name='Flujo rama 2'))
+fig.add_trace(go.Scatter3d(x=3 + t*5, y=-2*np.ones_like(t), z=0*t, mode='markers', marker=dict(size=4), name='Flujo rama 3'))
+
+# Salida flujo
+fig.add_trace(go.Scatter3d(
+    x=8 + t*3,
+    y=np.zeros_like(t),
+    z=np.zeros_like(t),
+    mode='markers',
+    marker=dict(size=4),
+    name='Flujo salida'
+))
+
+# Layout
+fig.update_layout(
+    scene=dict(
+        xaxis_title='Longitud',
+        yaxis_title='Distribución',
+        zaxis_title='Altura'
+    ),
+    margin=dict(l=0, r=0, b=0, t=0)
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+# ----------------------
 # RESULTADOS
 # ----------------------
 st.subheader("📊 Resultados")
 st.write(f"Q1={Q1:.4f}, Q2={Q2:.4f}, Q3={Q3:.4f}")
 
 # ----------------------
-# GEOMETRÍA DEL SISTEMA
+# EXPLICACIÓN
 # ----------------------
-
-# Entrada
-x_main = np.linspace(0,2,20)
-y_main = np.zeros_like(x_main)
-z_main = np.zeros_like(x_main)
-
-# División
-x_branch = np.linspace(2,8,50)
-y1 = np.linspace(0,2,50)
-y2 = np.linspace(0,0,50)
-y3 = np.linspace(0,-2,50)
-z = np.zeros_like(x_branch)
-
-# Unión
-x_merge = np.linspace(8,10,20)
-y_merge = np.zeros_like(x_merge)
-z_merge = np.zeros_like(x_merge)
-
-fig = go.Figure()
-
-# Línea principal entrada
-fig.add_trace(go.Scatter3d(x=x_main,y=y_main,z=z_main,mode='lines',line=dict(width=8),name='Entrada'))
-
-# Ramas
-fig.add_trace(go.Scatter3d(x=x_branch,y=y1,z=z,mode='lines',line=dict(width=8),name='Tubería 1'))
-fig.add_trace(go.Scatter3d(x=x_branch,y=y2,z=z,mode='lines',line=dict(width=8),name='Tubería 2'))
-fig.add_trace(go.Scatter3d(x=x_branch,y=y3,z=z,mode='lines',line=dict(width=8),name='Tubería 3'))
-
-# Salida
-fig.add_trace(go.Scatter3d(x=x_merge,y=y_merge,z=z_merge,mode='lines',line=dict(width=8),name='Salida'))
-
-# ----------------------
-# PARTÍCULAS (FLUJO)
-# ----------------------
-
-t = np.linspace(0,10,30)
-
-# entrada
-fig.add_trace(go.Scatter3d(x=t*0.2,y=np.zeros_like(t),z=np.zeros_like(t),mode='markers',marker=dict(size=3),name='Flujo entrada'))
-
-# ramas
-fig.add_trace(go.Scatter3d(x=t*0.6+2,y=np.linspace(0,2,30),z=np.zeros_like(t),mode='markers',marker=dict(size=3),name='Flujo 1'))
-fig.add_trace(go.Scatter3d(x=t*0.6+2,y=np.zeros_like(t),z=np.zeros_like(t),mode='markers',marker=dict(size=3),name='Flujo 2'))
-fig.add_trace(go.Scatter3d(x=t*0.6+2,y=np.linspace(0,-2,30),z=np.zeros_like(t),mode='markers',marker=dict(size=3),name='Flujo 3'))
-
-# salida
-fig.add_trace(go.Scatter3d(x=t*0.2+8,y=np.zeros_like(t),z=np.zeros_like(t),mode='markers',marker=dict(size=3),name='Flujo salida'))
-
-fig.update_layout(scene=dict(xaxis_title='X',yaxis_title='Y',zaxis_title='Z'),margin=dict(l=0,r=0,b=0,t=0))
-
-st.plotly_chart(fig, use_container_width=True)
-
-# ----------------------
-# INTERPRETACIÓN
-# ----------------------
-st.subheader("🧠 Análisis")
-st.write("El flujo entra por una tubería principal, se divide en tres ramas en paralelo y posteriormente se vuelve a unir.")
-st.write("La distribución del flujo depende de la resistencia de cada válvula.")
+st.subheader("🧠 Interpretación")
+st.write("El sistema muestr
